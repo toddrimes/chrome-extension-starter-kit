@@ -1,9 +1,9 @@
 {
     "name": "Chrome Extension Starter Kit",
     "version": "1.0",
-    "manifest_version": 2,
+    "manifest_version": 3,
     "description": "Chrome Extension starter Kit with es6 standards",
-    "browser_action": {
+    "action": {
         "default_icon": "images/icon.png",
         "default_popup": "popup.html"
     },
@@ -12,14 +12,13 @@
         "tabs",
         "activeTab",
         "declarativeContent",
-        "<all_urls>",
         "storage",
-        "http://*/*",
-        "https://*/*"
+        "scripting"
     ],
-    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
-    "background": {
-        "page": "background.html",
-        "persistent": false
+    "host_permissions":[ 
+        "https://jira.inbcu.com/browse/MPS-*"
+    ],
+    "background" :{
+        "service_worker": "background.js"
     }
 }
