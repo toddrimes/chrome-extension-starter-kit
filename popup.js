@@ -23,7 +23,9 @@ async function handleButtonClick(e) {
 }
 
 function reddenPage() {
-    document.body.innerHTML = 'red';
+    let jiraTitleText = document.querySelector('#summary-val').innerText;
+    let jiraDescriptionHtml = document.querySelector('#description-val').innerHTML;
+    document.body.innerHTML = jiraDescriptionHtml;
 }
 
 function constructButton() {
