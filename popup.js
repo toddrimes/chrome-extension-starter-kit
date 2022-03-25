@@ -18,14 +18,20 @@ async function handleButtonClick(e) {
     alert("hello!");
     chrome.scripting.executeScript({
         target: { tabId: await tabId },
-        function: reddenPage
+        function: copyJiraToWiki(tabId)
     });
 }
 
-function reddenPage() {
-    let jiraTitleText = document.querySelector('#summary-val').innerText;
-    let jiraDescriptionHtml = document.querySelector('#description-val').innerHTML;
-    document.body.innerHTML = jiraDescriptionHtml;
+function copyJiraToWiki(mTabId) {
+    // document.body.innerHTML = jiraDescriptionHtml;
+    let jiraMessage = {
+        ":jiraTitleText" : document.querySelector('#summary-val').innerText,
+        "jiraDescriptionHtml": document.querySelector('#description-val').innerHTML,
+        "jiraTabId": mTabId
+    }
+    chrome.runtime.sendMessage(jiraMessage, function(response) {
+        console.log(response);
+    });
 }
 
 function constructButton() {
@@ -36,5 +42,16 @@ function constructButton() {
     buttonDiv.appendChild(myButton);
     console.log('Init popup.js');
 }
+
+chrome.runtime.onMessage.addListener(
+  function(request, sender, sendResponse) {
+      let wikiURL = request;
+      document.querySelector('#description-val').innerHTML = wikiURL;
+      console.log(sender.tab ?
+        "from a content script:" + sender.tab.url :
+        "from the extension");
+      sendResponse({farewell: "goodbye"});
+  }
+);
 
 constructButton();

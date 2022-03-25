@@ -1,107 +1,63 @@
-// import { contentUtils } from '../utils/contentUtils.js';
-// import { tabUtils } from '../utils/tabUtils.js';
+console.log("Hi from background Script file")
 
-const init = () => {
-    console.log('Init background.js.bak');
-};
+let jiraObject = {};
 
-const tabUtils = {
-    openLinkInNewTab: (newURL) => {
-        // console.log('newURL ', newURL);
-        // chrome.tabs.create({url: newURL}, callback);
-        return new Promise((resolve, reject) => {
-            chrome.tabs.create({url: newURL}, (response) => {
-                return resolve(response);
-            });
-        });
-    },
-
-    close: (tabId) => {
-        // console.log('tabId ', tabId);
-        return new Promise((resolve, reject) => {
-            chrome.tabs.remove(tabId, (response) => {
-                return resolve(response);
-            });
-        });
-    }
-};
-
-const contentUtils = {
-    getContentOfTab: (tabId) => {
-        return new Promise((resolve, reject) => {
-            // console.log('Inside getContentOfCurrentDocument ', tabId);
-
-            const removeListeners = () => {
-                chrome.tabs.onUpdated.removeListener(onUpdated);
-                chrome.tabs.onRemoved.removeListener(onRemoved);
-            };
-
-            const onRemoved = () => {
-                removeListeners();
-
-                /**
-                 * This is not required. This can be removed later if it's work correctly.
-                 */
-
-                // callback(''); // Tab closed, no response.
-            };
-
-            const onUpdated = (updatedTabId, details) => {
-                // console.log('Inside onUpdated details.status ', details.status);
-                if (details.status === 'complete') {
-                    removeListeners();
-                    chrome.runtime.onMessage.addListener((request) => {
-                        // console.log('Inside onMessage ');
-                        if (request.action === 'getSource') {
-                            // console.log('request.source ', request.source);
-                            // message.innerText = request.source;
-                            return resolve(request.source);
-                        }
-                    });
-
-                    chrome.tabs.executeScript(tabId, {
-                        file: 'scripts/utils/getPagesSource.js'
-                    }, () => {
-                        // console.log('Inside executeScript ');
-                        // If you try and inject into an extensions page or the webstore/NTP you'll get an error
-                        if (chrome.runtime.lastError) {
-                            console.log('chrome.runtime.lastError ', chrome.runtime.lastError);
-                            return reject(chrome.runtime.lastError);
-                        }
-                    });
-                }
-            };
-            // console.log('Start adding listeners');
-            chrome.tabs.onUpdated.addListener(onUpdated);
-            chrome.tabs.onRemoved.addListener(onRemoved);
-            // console.log('Completed adding listeners');
-        });
-    }
-};
-
-chrome.runtime.onConnect.addListener(() => {
-    init();
-    console.log(`just ran init`);
+chrome.runtime.onMessage.addListener( function (request, sender, sendResponse) {
+    console.log("Got message from content Script: ", request);
+    jiraObject = request;
+    const newURL = "https://wiki.inbcu.com/x/gy8fFQ";
+    chrome.tabs.create({ url: newURL });
+    sendResponse('OK');
 });
 
-function getDOM() {
-    return Array.from(
-      document.getElementById('#summary-val'),
-      el => el.innerHTML
-    );
-}
-
-function reddenPage() {
-    document.body.style.backgroundColor = 'red';
-}
-
-chrome.action.onClicked.addListener((tab) => {
-    if(!tab.url.includes("chrome://")) {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: reddenPage
-        });
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+    // make sure the status is 'complete' and it's the right tab
+    console.log("UPDATED in the new tab!");
+    if(changeInfo.status == 'complete') {
+        switch (true) {
+            case (tab.url.indexOf('https://wiki.inbcu.com/display/ADSYS/VAM+User+Stories') != -1):
+                chrome.scripting.executeScript({
+                    target: {tabId: tab.id},
+                    function: myFunction
+                });
+                break;
+            case (tab.url.indexOf('https://wiki.inbcu.com/pages/createpage.action?spaceKey=ADSYS&fromPageId=') != -1):
+                chrome.scripting.executeScript({
+                    target: {tabId: tab.id},
+                    function: myFunction2
+                });
+                break;
+            case (tab.url.indexOf('https://wiki.inbcu.com/display/ADSYS/') != -1):
+                let wikiURL = tab.url;
+                chrome.scripting.executeScript({
+                    target: {tabId: tab.id},
+                    function: myFunction3(wikiURL)
+                });
+                break;
+        }
     }
 });
 
-// window.onload = init;
+function myFunction() {
+    const createPageButton = document.getElementById('quick-create-page-button');
+    createPageButton.click();
+}
+
+function myFunction2() {
+    //paste jirtitle into #content-title
+    const wikiTitle = document.getElementById('content-title');
+    wikiTitle.innerText = jiraObject.jiraTitleText;
+    // paste jiracontent into #tinymce
+    const wikiBody = document.getElementById('tinymce');
+    wikiBody.innerHTML = jiraObject.jiraDescriptionHtml;
+    // click the button with id #rte-button-publish
+    const publishButton = document.getElementById('rte-button-publish');
+    publishButton.click();
+}
+
+function myFunction3(theURL) {
+    // send theURL into the original Jira description
+    chrome.tabs.sendMessage(jiraObject.jiraTabId, {wikiURL: theURL}, function(response) {
+        console.log(response.farewell);
+    });
+}
