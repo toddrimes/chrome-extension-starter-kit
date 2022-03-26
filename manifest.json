@@ -4,8 +4,7 @@
     "manifest_version": 3,
     "description": "Chrome Extension starter Kit with es6 standards",
     "action": {
-        "default_icon": "images/icon.png",
-        "default_popup": "popup.html"
+        "default_icon": "images/icon.png"
     },
     "permissions": [
         "cookies",
@@ -15,14 +14,8 @@
         "storage",
         "scripting"
     ],
-    "host_permissions": ["http://*/*", "https://*/*"],
+    "host_permissions": ["https://jira.inbcu.com/browse/MPS-*", "https://wiki.inbcu.com/display/ADSYS/VAM+User+Stories"],
     "background" :{
         "service_worker": "background.js"
-    },
-    "content_scripts": [
-        {
-            "matches": ["https://jira.inbcu.com/browse/MPS-*"],
-            "js": ["content.js"]
-        }
-    ]
+    }
 }
