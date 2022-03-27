@@ -1,6 +1,9 @@
 console.log("Hi from content script");
+let jira
 
-chrome.runtime.sendMessage({ data: document.title }, function (response) {
+chrome.runtime.sendMessage({
+    "jiraTitleText" : document.querySelector('#summary-val').innerText,
+      "jiraDescriptionHtml": document.querySelector('#description-val').innerHTML}, function (response) {
     console.log(response);
 });
 
@@ -17,10 +20,8 @@ async function handleIconClick(tab) {
 function copyJiraToWiki(mTabId) {
     // document.body.innerHTML = jiraDescriptionHtml;
     let jiraMessage = {
-        ":jiraTitleText" : document.querySelector('#summary-val').innerText,
-        "jiraDescriptionHtml": document.querySelector('#description-val').innerHTML,
-        "jiraTabId": mTabId
-    }
+        "jiraTitleText" : document.querySelector('#summary-val').innerText,
+        "jiraDescriptionHtml": document.querySelector('#description-val').innerHTML}
     chrome.runtime.sendMessage(jiraMessage, function(response) {
         console.log(response);
     });
