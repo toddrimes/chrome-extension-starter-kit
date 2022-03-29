@@ -25,11 +25,18 @@ function fireItUp(mTabId) {
 }
 
 chrome.runtime.onMessage.addListener( function (request, sender, sendResponse) {
-    console.log("Got message from content Script: ", request);
-    jiraObject = request;
-    const newURL = "https://wiki.inbcu.com/pages/createpage.action?spaceKey=ADSYS&fromPageId=354365315&src=quick-create";
-    chrome.tabs.create({ url: newURL });
-    sendResponse('OK');
+    console.log("background.js, got message: " + request);
+    if(request.wikiURL){
+        console.log("Got wikiURL from content Script: ", request);
+        wikiURL = request.wikiURL;
+        sendResponse('OK - with wikiURL');
+    } else {
+        console.log("Got message from content Script: ", request);
+        jiraObject = request;
+        const newURL = "https://wiki.inbcu.com/pages/createpage.action?spaceKey=ADSYS&fromPageId=354365315&src=quick-create";
+        chrome.tabs.create({ url: newURL });
+        sendResponse('OK - with jiraObject');
+    }
 });
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
@@ -38,6 +45,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if(changeInfo.status == 'complete') {
         switch (true) {
             case (tab.url.indexOf('https://wiki.inbcu.com/pages/createpage.action?spaceKey=ADSYS&fromPageId=') != -1):
+                wikiURL = null;
                 let y = 1;
                 console.log('case 2: ' + tabId);
                 await chrome.scripting.executeScript({
@@ -46,28 +54,26 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
                     args: [jiraObject]
                 });
                 break;
-            case (tab.url.indexOf('https://wiki.inbcu.com/pages/viewpage.action?pageId=') != -1):
-            case (tab.url.indexOf('https://wiki.inbcu.com/display/ADSYS/') != -1):
+            case (tab.url.indexOf('https://wiki.inbcu.com/pages/viewpage.action?pageId=') != -1 || tab.url.indexOf('https://wiki.inbcu.com/display/ADSYS/') != -1):
                 if(wikiURL == null){
                     console.log('case 3.1: ' + tabId);
-                    wikiURL = await chrome.scripting.executeScript({
-                        target: {tabId: jiraTabId},
+                    wikiURL = changeInfo.url;
+                    await chrome.scripting.executeScript({
+                        target: {tabId: tabId},
                         function: myFunction3
                     });
                 } else {
-                    console.log('case 3.2: ' + tabId);
-                    console.log("Switching to JIRA tab: " + jiraTabId);
-                    console.log("The wikiURL is: " + wikiURL);
-                    chrome.tabs.update(
-                      jiraTabId,
-                      { "active" : true }
-                    );
+                    console.log('case 3.2: ' + jiraTabId);
                     await chrome.scripting.executeScript({
                         target: {tabId: jiraTabId},
                         function: myFunction4,
                         args: [wikiURL]
                     });
-                    wikiURL = null;
+                    chrome.tabs.update(
+                      jiraTabId,
+                      { "active" : true }
+                    );
+                    // wikiURL = null;
                 }
                 break;
         }
@@ -92,16 +98,22 @@ function myFunction3() {
     console.log('in myfunction3');
     const publishButton = document.getElementById('shareContentLink');
     publishButton.click();
-    let shareURL = document.getElementById('share-link-input').value;
-    return shareURL;
+    document.addEventListener("DOMContentLoaded", function() {
+        var shareField = document.querySelectorAll('div'); // all divs
+        let shareURL = shareField.value;
+        chrome.tabs.sendMessage(jiraTabId, {wikiURL: shareURL}, function(response) {
+            console.log(response.status);
+        });
+    });
+
 }
 
-function myFunction4() {
+function myFunction4(wikiURL) {
     console.log('in myfunction4');
     document.getElementById('description-val').click();
-    console.log('pasting in "`theURL`"' + theURL);
+    console.log('pasting in "`theURL`"' + wikiURL);
     let myWindow = document.querySelectorAll('.tox-edit-area__iframe')[0].contentWindow.document;
     let tinymce = myWindow.tinymce;
-    tinymce.setContent('theURL');
-    // document.querySelectorAll(".aui-button.aui-button-primary.submit")[0].click();
+    tinymce.setContent(wikiURL);
+    document.querySelectorAll(".aui-button.aui-button-primary.submit")[0].click();
 }

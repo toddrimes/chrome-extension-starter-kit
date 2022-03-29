@@ -1,5 +1,7 @@
 console.log("Hi from content script");
 
+let wikiURL = null;
+
 chrome.runtime.sendMessage({
     "jiraTitleText" : document.querySelector('#summary-val').innerText,
       "jiraDescriptionHtml": document.querySelector('#description-val').innerHTML}, function (response) {
@@ -26,17 +28,20 @@ function copyJiraToWiki(mTabId) {
     });
 }
 
+function sendWikiURL(mTheURL) {
+    chrome.runtime.sendMessage({
+        "wikiURL" : mTheURL}, function (response) {
+        console.log(response);
+    });
+}
+
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
-      let wikiURL = request;
-      if(!request.wikiURL) {
-
+      if(request.wikiURL == null || typeof request.wikiURL == 'undefined') {
           console.log(sender.tab ?
             "from a content script:" + sender.tab.url :
             "from the extension");
           sendResponse({farewell: "goodbye"});
-      } else {
-          
       }
   }
 );
