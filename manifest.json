@@ -17,5 +17,13 @@
     "host_permissions": ["https://jira.inbcu.com/browse/MPS-*", "https://wiki.inbcu.com/display/ADSYS/VAM+User+Stories"],
     "background" :{
         "service_worker": "background.js"
-    }
+    },
+    "content_scripts": [
+        {
+            "matches": ["https://*/*"],
+            "match_about_blank": true,
+            "all_frames": true,
+            "css": ["blank.css"]
+        }
+    ]
 }
